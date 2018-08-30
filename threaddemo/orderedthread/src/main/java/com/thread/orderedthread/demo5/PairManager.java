@@ -10,10 +10,19 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class PairManager {
     AtomicInteger checkCount = new AtomicInteger(0);
+    protected Lock lock = new ReentrantLock(); //显示所要求一把锁
     protected Pair p = new Pair();
     private List<Pair> storage = Collections.synchronizedList(new ArrayList<Pair>());
     public synchronized Pair getPair(){
         return new Pair(p.getX(),p.getY());
+    }
+    public  Pair getExplicitPair(){ //显示所获取Pair方法
+        lock.lock();
+        try {
+            return new Pair(p.getX(),p.getY());
+        }finally {
+            lock.unlock();
+        }
     }
     protected void store(Pair p){
         storage.add(p);
@@ -45,27 +54,25 @@ class PairManeger2 extends PairManager{
     }
 }
 class ExplicitPairManager1 extends PairManager{
-    private Lock lock = new ReentrantLock();
-    public synchronized void increment() {
+    public void increment() {
         lock.lock();
         try{
             p.incrementX();
             p.incrementY();
-            store(getPair());
+            store(getExplicitPair());
         }finally {
             lock.unlock();
         }
     }
 }
 class ExplicitPairManager2 extends PairManager{
-    private Lock lock = new ReentrantLock();
     public void increment() {
         Pair temp;
         lock.lock();
         try{
             p.incrementX();
             p.incrementY();
-            temp = getPair();
+            temp = getExplicitPair();
         }finally {
             lock.unlock();
         }
@@ -95,7 +102,11 @@ class PairChecker implements Runnable{
     public void run() {
         while (true){
             pm.checkCount.incrementAndGet();
-            pm.getPair().checkState();
+            if (pm instanceof ExplicitPairManager1 || pm instanceof ExplicitPairManager2){
+                pm.getExplicitPair();
+            }else{
+                pm.getPair().checkState();
+            }
         }
     }
 }
