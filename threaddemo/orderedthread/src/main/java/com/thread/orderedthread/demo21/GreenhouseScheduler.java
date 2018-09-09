@@ -69,7 +69,9 @@ public class GreenhouseScheduler {
             scheduler.shutdownNow();
             new Thread(){
                 public void run(){
-
+                    for(DataPoint d :data){
+                        System.out.println(d);
+                    }
                 }
             }.start();
 
